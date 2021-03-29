@@ -1,0 +1,99 @@
+import mysql.connector
+import tkinter
+from tkinter import *
+from tkinter import scrolledtext
+
+
+def connect_sql():
+    """
+
+    :return: Maakt een connect met de database
+    """
+    connectie = mysql.connector.connect(host='145.74.104.145',
+                                        user="jbbus",
+                                        password="Aa655197!",
+                                        db="jbbus",
+                                        auth_plugin='mysql_native_password')
+    cursor = connectie.cursor()
+    cursor.close()
+    return connectie
+
+
+class Gui:
+    def _init_(self):
+        self.main_window = tkinter.Tk()
+        self.main_window.title = "Piep"
+        self.main_window.geometry("500x500")
+        self.main_window.configure(background="lightblue")
+
+        self.label = tkinter.Label(self.main_window,
+                                   text="Piep berichten",
+                                   bg="darkblue",
+                                   fg="white")
+        self.label_filter = tkinter.Label(self.main_window,
+                                          text="filter op #tag",
+                                          bg="lightblue")
+        self.stuur_vlak = Text(self.main_window,
+                               wrap=WORD,
+                               height=1,
+                               width=30,
+                               background="lightgrey",
+                               font=("Times New Roman", 15))
+        self.berichten_vlak = scrolledtext.ScrolledText(self.main_window,
+                                                        wrap=WORD,
+                                                        width=40,
+                                                        height=10,
+                                                        background="lightgrey",
+                                                        font=("Times New Roman", 15))
+        self.filter_vlak = Text(self.main_window,
+                                wrap=WORD,
+                                width=1,
+                                height=30,
+                                background="lightgrey",
+                                font=("Times New Roman", 15))
+        self.refresh_knop = tkinter.Button(self.main_window,
+                                           text="refresh",
+                                           bg="lightgrey",
+                                           command=lambda: self.refresh_bericht(),
+                                           width=59,)
+        self.enter_knop = tkinter.Button(self.main_window,
+                                         text="Enter",
+                                         bg="lightgrey",
+                                         command=lambda: self.plaats_bericht(),
+                                         width=42)
+        self.label.pack(fill="x")
+        self.label_filter.pack(fill="left")
+        self.berichten_vlak.pack(side="bottom")
+        self.stuur_vlak.pack(side="top")
+        self.filter_vlak.pack(side="bottom")
+        self.refresh_knop.pack(side="bottom")
+        self.enter_knop.pack(side="top")
+        self.berichten_vlak.configure(state="enabled")
+
+        tkinter.mainloop()
+
+    def refresh_bericht(self):
+        self.berichten_vlak.configure(state="normal")
+        cursor = connectie.cursor()
+        filter = self.filter_vlak.get(1.0, END).replace("\n", "")
+        if filter == "":
+            cursor.execute(f"SELECT student_nr, bericht from piep")
+        else:
+            cursor.execute(f"SELECT student_nr, bericht from piep where bericht like '%#{filter}%#'")
+        result = cursor.fetchall()
+        self.berichten_vlak.delete(0.0, END)
+        for i in result:
+            self.berichten_vlak.insert(tkinter.INSERT, str(i[0]) + ":" + i[1] + "\n")
+        self.berichten_vlak.configure(state="disabled")
+
+    def plaats_bericht(self):
+        bericht = self.stuur_vlak.get(1.0, END)
+        cursor = connectie.cursor()
+        cursor.execute(f"INSERT INTO piep (bericht, datum, tijd, student_nr, ref_piep_id)"
+                       f"VALUES('{bericht}', curdate(), curtime(), 655197, null)")
+        connectie.commit()
+
+
+if __name__ == '__main__':
+    connectie = connect_sql()
+    Gui()
